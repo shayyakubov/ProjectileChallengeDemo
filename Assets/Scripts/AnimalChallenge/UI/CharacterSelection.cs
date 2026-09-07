@@ -21,14 +21,10 @@ namespace AnimalChallenge.UI
                 if (layoutGroup != null)
                     _iconContainer = layoutGroup.transform;
             }
-
-            ClearPlaceholderIcons();
         }
 
         public void Render(CharacterSelectionViewModel viewModel)
         {
-            ClearPlaceholderIcons();
-
             if (viewModel == null || viewModel.Icons.Count == 0)
             {
                 gameObject.SetActive(false);
@@ -40,19 +36,6 @@ namespace AnimalChallenge.UI
 
             for (var i = 0; i < viewModel.Icons.Count; i++)
                 _activeIcons[i].Render(viewModel.Icons[i]);
-        }
-
-        private void ClearPlaceholderIcons()
-        {
-            if (_iconContainer == null)
-                return;
-
-            for (var i = _iconContainer.childCount - 1; i >= 0; i--)
-            {
-                var child = _iconContainer.GetChild(i);
-                if (child.GetComponent<CharacterSelectionIcon>() == null)
-                    Destroy(child.gameObject);
-            }
         }
 
         private void EnsureIconCount(int count)
@@ -69,6 +52,15 @@ namespace AnimalChallenge.UI
 
             for (var i = 0; i < _activeIcons.Count; i++)
                 _activeIcons[i].gameObject.SetActive(i < count);
+        }
+
+        private void OnDestroy()
+        {
+            foreach (var icon in _activeIcons)
+            {
+                if (icon != null)
+                    icon.Clicked -= OnIconClicked;
+            }
         }
 
         private void OnIconClicked(CharacterSelectionIconViewModel viewModel)
