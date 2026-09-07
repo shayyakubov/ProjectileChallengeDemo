@@ -1,0 +1,68 @@
+{
+  "id": "rescue_capsule",
+  "displayName": "Rescue Capsule",
+  "challengeAddressableKey": "Challenges/CapsuleChallenge",
+  "rewardProjectileId": "Capsule",
+  "steps": [
+    {
+      "substeps": [
+        { "price": 5 },
+        { "price": 5 },
+        { "price": 10 }
+      ]
+    },
+    {
+      "substeps": [
+        { "price": 15 },
+        { "price": 15 }
+      ]
+    },
+    {
+      "substeps": [
+        { "price": 20 },
+        { "price": 30 }
+      ]
+    }
+  ],
+  "milestones": [
+    {
+      "score": 25,
+      "rewards": [
+        {
+          "currency": {
+            "AT": 5
+          }
+        }
+      ]
+    },
+    {
+      "score": 50,
+      "rewards": [
+        {
+          "currency": {
+            "CN": 50
+          }
+        }
+      ]
+    },
+    {
+      "score": 75,
+      "rewards": [
+        {
+          "currency": {
+            "AT": 10,
+            "CN": 25
+          }
+        }
+      ]
+    },
+    {
+      "score": 100,
+      "rewards": [
+        {
+          "rewardId": "Capsule"
+        }
+      ]
+    }
+  ]
+}
