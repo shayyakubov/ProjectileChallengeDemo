@@ -650,7 +650,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0acb6c343e34070befd13590d46de56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _projectileId: Default
   _artRoot: {fileID: 3492273204615618295}
   _background: {fileID: 8835970947780053748}
   _titleText: {fileID: 4966387784679772308}

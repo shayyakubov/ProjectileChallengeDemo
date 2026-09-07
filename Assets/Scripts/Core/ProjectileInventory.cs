@@ -81,6 +81,8 @@ namespace AnimalChallenge.Core
 
         public bool Equip(string projectileId)
         {
+            EnsureInitialized();
+
             if (!Owns(projectileId) || _equippedProjectileId == projectileId)
                 return false;
 

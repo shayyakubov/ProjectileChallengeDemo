@@ -35,7 +35,7 @@ namespace AnimalChallenge.Controllers
                 activeStepIndex,
                 activeStepPanel,
                 usePurchaseSuccessRender,
-                new EquipCharacterPanelViewModel(isOwned, isEquipped));
+                new EquipCharacterPanelViewModel(projectileId, isOwned, isEquipped));
         }
 
         public static CharacterPageViewModel MapDefaultPage(
@@ -53,7 +53,7 @@ namespace AnimalChallenge.Controllers
                 -1,
                 null,
                 false,
-                new EquipCharacterPanelViewModel(isOwned, isEquipped));
+                new EquipCharacterPanelViewModel(projectileId, isOwned, isEquipped));
         }
 
         private static List<ChallengeStepViewModel> BuildStepViewModels(

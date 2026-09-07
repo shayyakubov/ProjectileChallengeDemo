@@ -6,15 +6,12 @@ namespace AnimalChallenge.UI
 {
     public class CharacterPage : MonoBehaviour
     {
-        [SerializeField] private string _projectileId;
         [SerializeField] private GameObject _artRoot;
         [SerializeField] private Image _background;
         [SerializeField] private Text _titleText;
         [SerializeField] private ChallengeStep[] _challengeSteps;
         [SerializeField] private StepPanel _stepPanel;
         [SerializeField] private EquipCharacterPanel _equipCharacterPanel;
-
-        public string ProjectileId => _projectileId;
 
         public event Action PurchaseNextClicked;
         public event Action<string> EquipCharacterClicked;
@@ -134,9 +131,9 @@ namespace AnimalChallenge.UI
             PurchaseNextClicked?.Invoke();
         }
 
-        private void OnEquipCharacterPanelClicked()
+        private void OnEquipCharacterPanelClicked(string projectileId)
         {
-            EquipCharacterClicked?.Invoke(_projectileId);
+            EquipCharacterClicked?.Invoke(projectileId);
         }
     }
 }

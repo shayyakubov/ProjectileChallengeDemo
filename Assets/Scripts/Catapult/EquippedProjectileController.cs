@@ -1,52 +1,41 @@
-using System.Collections;
+using System;
 using AnimalChallenge.Core;
 using UnityEngine;
 
 namespace AnimalChallenge.Catapult
 {
-    public class EquippedProjectileController : MonoBehaviour
+    public sealed class EquippedProjectileController : IDisposable
     {
-        [SerializeField] private ProjectileInventory _inventory;
-        [SerializeField] private ProjectileIconCatalog _catalog;
-        [SerializeField] private CatapultLauncher _launcher;
-        [SerializeField] private CatapultGame _catapultGame;
-        [SerializeField] private CameraTargetController _cameraTargetController;
+        private readonly ProjectileInventory _inventory;
+        private readonly ProjectileIconCatalog _catalog;
+        private readonly CatapultLauncher _launcher;
+        private readonly CatapultGame _catapultGame;
+        private readonly CameraTargetController _cameraTargetController;
 
-        private void Awake()
+        public EquippedProjectileController(
+            ProjectileInventory inventory,
+            ProjectileIconCatalog catalog,
+            CatapultLauncher launcher,
+            CatapultGame catapultGame,
+            CameraTargetController cameraTargetController)
         {
-            if (_inventory == null)
-                _inventory = GetComponent<ProjectileInventory>();
-        }
+            _inventory = inventory;
+            _catalog = catalog;
+            _launcher = launcher;
+            _catapultGame = catapultGame;
+            _cameraTargetController = cameraTargetController;
 
-        private void OnEnable()
-        {
             if (_inventory != null)
                 _inventory.EquippedProjectileChanged += OnEquippedProjectileChanged;
         }
 
-        private void OnDisable()
+        public void Dispose()
         {
             if (_inventory != null)
                 _inventory.EquippedProjectileChanged -= OnEquippedProjectileChanged;
         }
 
-        private void Start()
-        {
-            StartCoroutine(ApplyEquippedProjectileNextFrame());
-        }
-
-        private IEnumerator ApplyEquippedProjectileNextFrame()
-        {
-            yield return null;
-            ApplyEquippedProjectile();
-        }
-
-        private void OnEquippedProjectileChanged(string projectileId)
-        {
-            ApplyEquippedProjectile();
-        }
-
-        private void ApplyEquippedProjectile()
+        public void ApplyEquippedProjectile()
         {
             if (_inventory == null || _launcher == null || _catalog == null)
                 return;
@@ -62,7 +51,8 @@ namespace AnimalChallenge.Catapult
                 return;
             }
 
-            var prefab = prefabObject.GetComponent<Projectile>();
+            var prefab = prefabObject.GetComponent<Projectile>()
+                         ?? prefabObject.GetComponentInChildren<Projectile>(true);
             if (prefab == null)
             {
                 Debug.LogWarning($"EquippedProjectileController: prefab for '{projectileId}' has no Projectile component.");
@@ -75,6 +65,11 @@ namespace AnimalChallenge.Catapult
 
             _catapultGame?.SetProjectile(projectile);
             _cameraTargetController?.SetProjectileTarget(projectile.transform);
+        }
+
+        private void OnEquippedProjectileChanged(string projectileId)
+        {
+            ApplyEquippedProjectile();
         }
     }
 }

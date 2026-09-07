@@ -13,31 +13,33 @@ namespace AnimalChallenge.Bootstrap
     {
         [SerializeField] private TextAsset _configAsset;
         [SerializeField] private CharacterChallengeView _characterChallengeView;
-        [SerializeField] private CurrencyWallet _wallet;
         [SerializeField] private SceneNavigationController _navigation;
         [SerializeField] private ProjectileInventory _projectileInventory;
         [SerializeField] private ProjectileIconCatalog _iconCatalog;
 
         private AnimalChallengeManager _manager;
+        private bool _isInitialized;
 
-        private void Awake()
+        public ProjectileIconCatalog IconCatalog => _iconCatalog;
+
+        public void Initialize(CurrencyWallet wallet)
         {
+            if (_isInitialized)
+                return;
+
+            _isInitialized = true;
+
             if (_configAsset == null || _characterChallengeView == null)
             {
                 Debug.LogError("AnimalChallengeBootstrap is missing required references.");
                 return;
             }
 
-            if (_wallet == null)
-                _wallet = CurrencyWallet.Instance;
-
             if (_navigation == null)
                 _navigation = GetComponent<SceneNavigationController>();
 
             if (_projectileInventory == null)
                 _projectileInventory = ProjectileInventory.Instance;
-
-            _projectileInventory?.EnsureInitialized();
 
             var config = JsonUtility.FromJson<AnimalChallengeConfigData>(_configAsset.text);
             if (config == null)
@@ -46,10 +48,10 @@ namespace AnimalChallenge.Bootstrap
                 return;
             }
 
-            var userData = new AnimalChallengeUserData(); // this can be loaded from server/local storage
+            var userData = new AnimalChallengeUserData();
             var model = AnimalChallengeModel.Create(config, userData);
             _manager = new AnimalChallengeManager();
-            _manager.Initialize(model, _characterChallengeView, _wallet, _navigation, _projectileInventory, _iconCatalog);
+            _manager.Initialize(model, _characterChallengeView, wallet, _navigation, _projectileInventory, _iconCatalog);
         }
 
         private void OnDestroy()

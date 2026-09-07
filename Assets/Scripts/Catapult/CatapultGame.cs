@@ -11,7 +11,13 @@ namespace AnimalChallenge.Catapult
         [SerializeField] private Projectile _projectile;
         [SerializeField] private CatapultLauncher _launcher;
         [SerializeField] private LandingField _landingField;
-        [SerializeField] private CurrencyWallet _wallet;
+
+        private CurrencyWallet _wallet;
+
+        public void Initialize(CurrencyWallet wallet)
+        {
+            _wallet = wallet;
+        }
 
         private void OnEnable()
         {

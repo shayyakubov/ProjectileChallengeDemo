@@ -71,9 +71,12 @@ namespace AnimalChallenge.UI
                 _activeIcons[i].gameObject.SetActive(i < count);
         }
 
-        private void OnIconClicked(string projectileId)
+        private void OnIconClicked(CharacterSelectionIconViewModel viewModel)
         {
-            IconSelected?.Invoke(projectileId);
+            if (viewModel == null || string.IsNullOrEmpty(viewModel.ProjectileId))
+                return;
+
+            IconSelected?.Invoke(viewModel.ProjectileId);
         }
     }
 }

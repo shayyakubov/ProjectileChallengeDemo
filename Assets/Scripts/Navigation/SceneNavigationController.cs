@@ -13,6 +13,19 @@ namespace AnimalChallenge.Navigation
         Catapult
     }
 
+    /// <summary>
+    /// Horizontal pager that keeps two layers in sync during a page change:
+    ///
+    /// 1. UI slide — <see cref="_screenPager"/> moves on the canvas (Challenge at x=0, Catapult at x=-pageWidth).
+    ///    This is the visible screen transition the player swipes through.
+    ///
+    /// 2. World slide — the camera moves on X so the 3D scene (catapult) pans with the UI.
+    ///    Distance is derived from the camera frustum at <see cref="_slideTarget"/> depth, not a hand-tuned value.
+    ///    Both movements share the same progress: pager position drives <see cref="ApplyCameraOffset"/>.
+    ///
+    /// Metrics are cached in <see cref="Awake"/> before any slide, while the camera is still at
+    /// <see cref="_baseCameraPosition"/>.
+    /// </summary>
     public class SceneNavigationController : MonoBehaviour
     {
         [SerializeField] private RectTransform _screenPager;
@@ -24,10 +37,12 @@ namespace AnimalChallenge.Navigation
         [SerializeField] private CameraTargetController _cameraTargetController;
         [SerializeField] private float _slideDuration = 0.45f;
         [SerializeField] private float _swipeThresholdPixels = 60f;
-        [SerializeField] private float _worldSlideDistance = 45f;
+        [SerializeField] private Transform _slideTarget;
 
         private float _pageWidth;
         private Vector3 _baseCameraPosition;
+        private Vector3 _worldLeftEdge;
+        private float _worldSlideWidth;
         private NavigationPage _currentPage = NavigationPage.Catapult;
         private bool _isTransitioning;
         private Coroutine _slideCoroutine;
@@ -48,6 +63,7 @@ namespace AnimalChallenge.Navigation
                 _baseCameraPosition = _camera.transform.position;
 
             CachePageWidth();
+            CacheWorldSlideWidth();
             LayoutPages();
         }
 
@@ -166,12 +182,16 @@ namespace AnimalChallenge.Navigation
             return EventSystem.current.IsPointerOverGameObject();
         }
 
+        /// <summary>
+        /// First movement: lerp <see cref="_screenPager"/> on X, then call <see cref="ApplyCameraOffset"/>
+        /// each frame so the world camera follows the same progress.
+        /// </summary>
         private IEnumerator SlideToPage(NavigationPage page)
         {
             _isTransitioning = true;
 
             if (page == NavigationPage.AnimalChallenge)
-                SetCatapultSystemsEnabled(false);
+                SetCatapultSystemsEnabled(false); //TODO: SceneNavigationController should not be responsible for enabling/disabling systems. instead the systems should subscribe to the
 
             var startX = _screenPager.anchoredPosition.x;
             var targetX = GetPagerXForPage(page);
@@ -214,14 +234,50 @@ namespace AnimalChallenge.Navigation
             PageChanged?.Invoke(page);
         }
 
-        private void ApplyCameraOffset()
+        /// <summary>
+        /// Measures how far the camera must travel on X for a full page change.
+        /// Uses viewport left/right world points at <see cref="_slideTarget"/> depth.
+        /// Called once before any lerping so values reflect the resting camera pose.
+        /// </summary>
+        private void CacheWorldSlideWidth()
         {
-            if (_camera == null || _screenPager == null || _pageWidth <= 0f)
+            if (_camera == null)
                 return;
 
-            var slideT = (_screenPager.anchoredPosition.x + _pageWidth) / _pageWidth;
+            var depth = GetDepthToTarget();
+            if (depth <= 0f)
+                return;
+
+            _worldLeftEdge = _camera.ViewportToWorldPoint(new Vector3(0f, 0.5f, depth));
+            var worldRightEdge = _camera.ViewportToWorldPoint(new Vector3(1f, 0.5f, depth));
+            _worldSlideWidth = worldRightEdge.x - _worldLeftEdge.x;
+        }
+
+        private float GetDepthToTarget()
+        {
+            var target = _slideTarget != null
+                ? _slideTarget
+                : _launcher != null ? _launcher.transform : null;
+
+            if (target == null)
+                return 0f;
+
+            var cameraTransform = _camera.transform;
+            return Vector3.Dot(target.position - cameraTransform.position, cameraTransform.forward);
+        }
+
+        /// <summary>
+        /// Second movement: offset the camera from its base pose using the same progress as the UI pager.
+        /// slideProgress 0 = Catapult page, 1 = Challenge page.
+        /// </summary>
+        private void ApplyCameraOffset()
+        {
+            if (_camera == null || _screenPager == null || _pageWidth <= 0f || _worldSlideWidth <= 0f)
+                return;
+
+            var slideProgress = (_screenPager.anchoredPosition.x + _pageWidth) / _pageWidth;
             var pos = _baseCameraPosition;
-            pos.x -= slideT * _worldSlideDistance;
+            pos.x -= slideProgress * _worldSlideWidth;
             _camera.transform.position = pos;
         }
 
@@ -232,8 +288,10 @@ namespace AnimalChallenge.Navigation
 
         private void SetCatapultSystemsEnabled(bool enabled)
         {
+            //TODO: SceneNavigationController should not be responsible for enabling/disabling systems. instead the systems should subscribe to the
+            //PageChanged event and enable/disable themselves.
             _cameraTargetController?.SetFollowEnabled(enabled);
-            _launcher?.SetInputEnabled(enabled);
+            _launcher?.SetInputEnabled(enabled); 
         }
     }
 }

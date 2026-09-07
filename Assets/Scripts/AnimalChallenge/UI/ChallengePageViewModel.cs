@@ -90,11 +90,13 @@ namespace AnimalChallenge.UI
 
     public sealed class EquipCharacterPanelViewModel
     {
+        public string ProjectileId { get; }
         public bool ShowPanel { get; }
         public bool IsEquipped { get; }
 
-        public EquipCharacterPanelViewModel(bool showPanel, bool isEquipped)
+        public EquipCharacterPanelViewModel(string projectileId, bool showPanel, bool isEquipped)
         {
+            ProjectileId = projectileId;
             ShowPanel = showPanel;
             IsEquipped = isEquipped;
         }

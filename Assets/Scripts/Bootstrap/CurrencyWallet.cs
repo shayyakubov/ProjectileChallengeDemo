@@ -1,33 +1,13 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace AnimalChallenge.Core
 {
-    public class CurrencyWallet : MonoBehaviour
+    public class CurrencyWallet
     {
-        public static CurrencyWallet Instance { get; private set; }
-
         public event Action<IReadOnlyDictionary<string, int>> BalanceChanged;
 
-        private readonly Dictionary<string, int> _balances = new();
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-        }
-
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
+        private readonly Dictionary<string, int> _balances = new Dictionary<string, int>();
 
         public int GetBalance(string currencyId)
         {

@@ -9,7 +9,9 @@ namespace AnimalChallenge.UI
         [SerializeField] private Button _equipButton;
         [SerializeField] private GameObject _equippedLabel;
 
-        public event Action EquipClicked;
+        public event Action<string> EquipClicked;
+
+        private EquipCharacterPanelViewModel _viewModel;
 
         private void Awake()
         {
@@ -35,6 +37,8 @@ namespace AnimalChallenge.UI
 
         public void Render(EquipCharacterPanelViewModel viewModel)
         {
+            _viewModel = viewModel;
+
             if (viewModel == null)
             {
                 gameObject.SetActive(false);
@@ -52,7 +56,10 @@ namespace AnimalChallenge.UI
 
         private void OnEquipButtonClicked()
         {
-            EquipClicked?.Invoke();
+            if (_viewModel == null || string.IsNullOrEmpty(_viewModel.ProjectileId))
+                return;
+
+            EquipClicked?.Invoke(_viewModel.ProjectileId);
         }
     }
 }

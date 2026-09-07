@@ -6,15 +6,18 @@ namespace AnimalChallenge.Core
 {
     public class CurrencyBalanceController : MonoBehaviour
     {
-        [SerializeField] private CurrencyWallet _wallet;
         [SerializeField] private Text _atText;
         [SerializeField] private Text _cnText;
 
+        private CurrencyWallet _wallet;
+
+        public void Initialize(CurrencyWallet wallet)
+        {
+            _wallet = wallet;
+        }
+
         private void OnEnable()
         {
-            if (_wallet == null)
-                _wallet = CurrencyWallet.Instance;
-
             if (_wallet != null)
                 _wallet.BalanceChanged += OnBalanceChanged;
 

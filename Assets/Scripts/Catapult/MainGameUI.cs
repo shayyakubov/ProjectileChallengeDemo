@@ -7,17 +7,20 @@ namespace AnimalChallenge.Catapult
 {
     public class MainGameUI : MonoBehaviour
     {
-        [SerializeField] private CurrencyWallet _wallet;
         [SerializeField] private CatapultGame _shotController;
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private TMP_Text _atText;
         [SerializeField] private TMP_Text _cnText;
 
+        private CurrencyWallet _wallet;
+
+        public void Initialize(CurrencyWallet wallet)
+        {
+            _wallet = wallet;
+        }
+
         private void OnEnable()
         {
-            if (_wallet == null)
-                _wallet = CurrencyWallet.Instance;
-
             if (_wallet != null)
                 _wallet.BalanceChanged += HandleBalanceChanged;
 

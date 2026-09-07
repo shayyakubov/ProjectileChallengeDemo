@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,9 +10,9 @@ namespace AnimalChallenge.UI
         [SerializeField] private Image _iconImage;
         [SerializeField] private GameObject _selectedIndicator;
 
-        public event Action<string> Clicked;
+        public event Action<CharacterSelectionIconViewModel> Clicked;
 
-        private string _projectileId;
+        private CharacterSelectionIconViewModel _viewModel;
 
         private void Awake()
         {
@@ -35,13 +34,14 @@ namespace AnimalChallenge.UI
 
         public void Render(CharacterSelectionIconViewModel viewModel)
         {
+            _viewModel = viewModel;
+
             if (viewModel == null)
             {
                 gameObject.SetActive(false);
                 return;
             }
 
-            _projectileId = viewModel.ProjectileId;
             gameObject.SetActive(true);
 
             if (_iconImage != null)
@@ -61,8 +61,8 @@ namespace AnimalChallenge.UI
 
         private void OnButtonClicked()
         {
-            if (!string.IsNullOrEmpty(_projectileId))
-                Clicked?.Invoke(_projectileId);
+            if (_viewModel != null)
+                Clicked?.Invoke(_viewModel);
         }
     }
 }

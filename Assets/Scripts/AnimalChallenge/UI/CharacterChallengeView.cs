@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace AnimalChallenge.UI
@@ -60,36 +59,21 @@ namespace AnimalChallenge.UI
             if (_characterSelection != null)
                 _characterSelection.Render(viewModel.CharacterSelection);
 
-            var pagesByProjectileId = BuildPageLookup();
+            if (_characterPages == null)
+                return;
 
-            foreach (var pageViewModel in viewModel.Pages)
+            for (var i = 0; i < _characterPages.Length; i++)
             {
-                if (pageViewModel == null || string.IsNullOrEmpty(pageViewModel.ProjectileId))
+                var page = _characterPages[i];
+                if (page == null)
                     continue;
 
-                if (!pagesByProjectileId.TryGetValue(pageViewModel.ProjectileId, out var page))
-                    continue;
+                var pageViewModel = i < viewModel.Pages.Count
+                    ? viewModel.Pages[i]
+                    : null;
 
                 page.Render(pageViewModel);
             }
-        }
-
-        private Dictionary<string, CharacterPage> BuildPageLookup()
-        {
-            var lookup = new Dictionary<string, CharacterPage>();
-
-            if (_characterPages == null)
-                return lookup;
-
-            foreach (var page in _characterPages)
-            {
-                if (page == null || string.IsNullOrEmpty(page.ProjectileId))
-                    continue;
-
-                lookup[page.ProjectileId] = page;
-            }
-
-            return lookup;
         }
 
         private void OnPagePurchaseNextClicked()
