@@ -10,6 +10,8 @@ namespace AnimalChallenge.Controllers
 {
     public sealed class AnimalChallengeManager : IDisposable
     {
+        private const string DefaultProjectileId = "Default";
+
         public event Action ModelChanged;
 
         private AnimalChallengeModel _challengeData;
@@ -17,27 +19,36 @@ namespace AnimalChallenge.Controllers
         private CurrencyWallet _wallet;
         private SceneNavigationController _navigation;
         private ProjectileInventory _projectileInventory;
+        private ProjectileIconCatalog _iconCatalog;
+        private string _selectedProjectileId;
 
         public void Initialize(
             AnimalChallengeModel model,
-            IChallengePageView view,
+            IChallengePageView challengePage,
             CurrencyWallet wallet,
             SceneNavigationController navigation = null,
-            ProjectileInventory projectileInventory = null)
+            ProjectileInventory projectileInventory = null,
+            ProjectileIconCatalog iconCatalog = null)
         {
             _challengeData = model ?? throw new ArgumentNullException(nameof(model));
-            _animalChallengePage = view ?? throw new ArgumentNullException(nameof(view));
+            _animalChallengePage = challengePage ?? throw new ArgumentNullException(nameof(challengePage));
             _wallet = wallet;
             _navigation = navigation;
             _projectileInventory = projectileInventory;
+            _iconCatalog = iconCatalog;
+            _selectedProjectileId = ResolveInitialSelectedProjectileId();
 
             _animalChallengePage.PurchaseNextClicked += OnPurchaseNextClicked;
             _animalChallengePage.EquipCharacterClicked += OnEquipCharacterClicked;
+            _animalChallengePage.CharacterSelected += OnCharacterSelected;
             if (_wallet != null)
                 _wallet.BalanceChanged += OnWalletChanged;
 
             if (_projectileInventory != null)
+            {
                 _projectileInventory.InventoryChanged += OnProjectileInventoryChanged;
+                _projectileInventory.EquippedProjectileChanged += OnEquippedProjectileChanged;
+            }
 
             if (_navigation != null)
                 _navigation.PageChanged += OnPageChanged;
@@ -51,16 +62,29 @@ namespace AnimalChallenge.Controllers
             {
                 _animalChallengePage.PurchaseNextClicked -= OnPurchaseNextClicked;
                 _animalChallengePage.EquipCharacterClicked -= OnEquipCharacterClicked;
+                _animalChallengePage.CharacterSelected -= OnCharacterSelected;
             }
 
             if (_wallet != null)
                 _wallet.BalanceChanged -= OnWalletChanged;
 
             if (_projectileInventory != null)
+            {
                 _projectileInventory.InventoryChanged -= OnProjectileInventoryChanged;
+                _projectileInventory.EquippedProjectileChanged -= OnEquippedProjectileChanged;
+            }
 
             if (_navigation != null)
                 _navigation.PageChanged -= OnPageChanged;
+        }
+
+        private string ResolveInitialSelectedProjectileId()
+        {
+            var rewardProjectileId = _challengeData?.RewardProjectileId;
+            if (!string.IsNullOrEmpty(rewardProjectileId))
+                return rewardProjectileId;
+
+            return DefaultProjectileId;
         }
 
         private void OnPageChanged(NavigationPage page)
@@ -79,26 +103,103 @@ namespace AnimalChallenge.Controllers
             RefreshView();
         }
 
+        private void OnEquippedProjectileChanged(string projectileId)
+        {
+            RefreshView();
+        }
+
         public void RefreshView(int? justPurchasedSubstepIndex = null, bool didCompleteStep = false)
         {
             if (_animalChallengePage == null || _challengeData == null)
                 return;
 
-            var challengePageViewModel = ChallengePageViewModelMapper.Map(
-                _challengeData,
-                _wallet,
-                BuildEquipCharacterPanelViewModel(),
-                justPurchasedSubstepIndex,
-                didCompleteStep);
+            var challengePageViewModel = new ChallengePageViewModel(
+                _selectedProjectileId,
+                BuildCharacterSelectionViewModel(),
+                BuildCharacterPageViewModels(justPurchasedSubstepIndex, didCompleteStep));
             _animalChallengePage.Render(challengePageViewModel);
         }
 
-        private EquipCharacterPanelViewModel BuildEquipCharacterPanelViewModel()
+        private List<CharacterPageViewModel> BuildCharacterPageViewModels(
+            int? justPurchasedSubstepIndex,
+            bool didCompleteStep)
         {
+            var pages = new List<CharacterPageViewModel>();
             var rewardProjectileId = _challengeData.RewardProjectileId;
-            var ownsReward = _projectileInventory != null && _projectileInventory.Owns(rewardProjectileId);
-            var isEquipped = _projectileInventory != null && _projectileInventory.IsEquipped(rewardProjectileId);
-            return new EquipCharacterPanelViewModel(ownsReward, isEquipped);
+
+            pages.Add(ChallengePageViewModelMapper.MapDefaultPage(
+                DefaultProjectileId,
+                _selectedProjectileId == DefaultProjectileId,
+                _projectileInventory?.Owns(DefaultProjectileId) ?? false,
+                _projectileInventory?.IsEquipped(DefaultProjectileId) ?? false));
+
+            if (!string.IsNullOrEmpty(rewardProjectileId))
+            {
+                pages.Add(ChallengePageViewModelMapper.MapChallengePage(
+                    _challengeData,
+                    _wallet,
+                    rewardProjectileId,
+                    _selectedProjectileId == rewardProjectileId,
+                    _projectileInventory?.Owns(rewardProjectileId) ?? false,
+                    _projectileInventory?.IsEquipped(rewardProjectileId) ?? false,
+                    justPurchasedSubstepIndex,
+                    didCompleteStep));
+            }
+
+            return pages;
+        }
+
+        private CharacterSelectionViewModel BuildCharacterSelectionViewModel()
+        {
+            var icons = new List<CharacterSelectionIconViewModel>();
+            var rewardProjectileId = _challengeData.RewardProjectileId;
+
+            if (!string.IsNullOrEmpty(rewardProjectileId))
+            {
+                icons.Add(CreateCharacterSelectionIconViewModel(
+                    rewardProjectileId,
+                    _projectileInventory?.Owns(rewardProjectileId) ?? false,
+                    _projectileInventory?.IsEquipped(rewardProjectileId) ?? false));
+            }
+
+            if (_projectileInventory != null)
+            {
+                foreach (var projectileId in _projectileInventory.GetOwnedProjectileIds())
+                {
+                    if (projectileId == rewardProjectileId)
+                        continue;
+
+                    icons.Add(CreateCharacterSelectionIconViewModel(
+                        projectileId,
+                        true,
+                        _projectileInventory.IsEquipped(projectileId)));
+                }
+            }
+
+            return new CharacterSelectionViewModel(icons);
+        }
+
+        private CharacterSelectionIconViewModel CreateCharacterSelectionIconViewModel(
+            string projectileId,
+            bool isOwned,
+            bool isEquipped)
+        {
+            return new CharacterSelectionIconViewModel(
+                projectileId,
+                _iconCatalog?.GetIcon(projectileId),
+                isOwned,
+                isEquipped,
+                _selectedProjectileId == projectileId);
+        }
+
+        private void OnCharacterSelected(string projectileId)
+        {
+            if (string.IsNullOrEmpty(projectileId))
+                return;
+
+            _selectedProjectileId = projectileId;
+            RefreshView();
+            ModelChanged?.Invoke();
         }
 
         private void OnPurchaseNextClicked()
@@ -123,15 +224,15 @@ namespace AnimalChallenge.Controllers
             ModelChanged?.Invoke();
         }
 
-        private void OnEquipCharacterClicked()
+        private void OnEquipCharacterClicked(string projectileId)
         {
-            if (_challengeData == null || _projectileInventory == null)
+            if (_projectileInventory == null || string.IsNullOrEmpty(projectileId))
                 return;
 
-            var rewardProjectileId = _challengeData.RewardProjectileId;
-            if (!_projectileInventory.Equip(rewardProjectileId))
+            if (!_projectileInventory.Equip(projectileId))
                 return;
 
+            _selectedProjectileId = projectileId;
             RefreshView();
             ModelChanged?.Invoke();
         }

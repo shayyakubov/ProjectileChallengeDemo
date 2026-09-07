@@ -1,4 +1,4 @@
-using System;
+using System.Collections;
 using AnimalChallenge.Core;
 using UnityEngine;
 
@@ -6,23 +6,16 @@ namespace AnimalChallenge.Catapult
 {
     public class EquippedProjectileController : MonoBehaviour
     {
-        [Serializable]
-        private struct ProjectilePrefabEntry
-        {
-            public string id;
-            public Projectile prefab;
-        }
-
         [SerializeField] private ProjectileInventory _inventory;
+        [SerializeField] private ProjectileIconCatalog _catalog;
         [SerializeField] private CatapultLauncher _launcher;
         [SerializeField] private CatapultGame _catapultGame;
         [SerializeField] private CameraTargetController _cameraTargetController;
-        [SerializeField] private ProjectilePrefabEntry[] _projectiles;
 
         private void Awake()
         {
             if (_inventory == null)
-                _inventory = ProjectileInventory.Instance;
+                _inventory = GetComponent<ProjectileInventory>();
         }
 
         private void OnEnable()
@@ -39,6 +32,12 @@ namespace AnimalChallenge.Catapult
 
         private void Start()
         {
+            StartCoroutine(ApplyEquippedProjectileNextFrame());
+        }
+
+        private IEnumerator ApplyEquippedProjectileNextFrame()
+        {
+            yield return null;
             ApplyEquippedProjectile();
         }
 
@@ -49,16 +48,26 @@ namespace AnimalChallenge.Catapult
 
         private void ApplyEquippedProjectile()
         {
-            if (_inventory == null || _launcher == null)
+            if (_inventory == null || _launcher == null || _catalog == null)
                 return;
 
             var projectileId = _inventory.EquippedProjectileId;
             if (string.IsNullOrEmpty(projectileId))
                 return;
 
-            var prefab = GetPrefab(projectileId);
-            if (prefab == null)
+            var prefabObject = _catalog.GetPrefab(projectileId);
+            if (prefabObject == null)
+            {
+                Debug.LogWarning($"EquippedProjectileController: no prefab mapped for '{projectileId}'.");
                 return;
+            }
+
+            var prefab = prefabObject.GetComponent<Projectile>();
+            if (prefab == null)
+            {
+                Debug.LogWarning($"EquippedProjectileController: prefab for '{projectileId}' has no Projectile component.");
+                return;
+            }
 
             var projectile = _launcher.ReplaceProjectile(prefab);
             if (projectile == null)
@@ -66,20 +75,6 @@ namespace AnimalChallenge.Catapult
 
             _catapultGame?.SetProjectile(projectile);
             _cameraTargetController?.SetProjectileTarget(projectile.transform);
-        }
-
-        private Projectile GetPrefab(string projectileId)
-        {
-            if (_projectiles == null)
-                return null;
-
-            foreach (var entry in _projectiles)
-            {
-                if (entry.id == projectileId)
-                    return entry.prefab;
-            }
-
-            return null;
         }
     }
 }

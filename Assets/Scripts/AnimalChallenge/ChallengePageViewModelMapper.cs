@@ -8,31 +8,52 @@ namespace AnimalChallenge.Controllers
 {
     public static class ChallengePageViewModelMapper
     {
-        public static ChallengePageViewModel Map(
+        public static CharacterPageViewModel MapChallengePage(
             AnimalChallengeModel model,
             CurrencyWallet wallet,
-            EquipCharacterPanelViewModel equipCharacterPanel,
+            string projectileId,
+            bool isVisible,
+            bool isOwned,
+            bool isEquipped,
             int? justPurchasedSubstepIndex = null,
             bool didCompleteStep = false)
         {
             var stepCount = model.StepCount;
             var activeStepIndex = GetActiveStepIndex(model, stepCount);
             var steps = BuildStepViewModels(model, stepCount, activeStepIndex, didCompleteStep);
-            var milestones = BuildMilestones(model);
             var activeStepPanel = activeStepIndex >= 0
                 ? BuildActiveStepPanel(model, wallet, activeStepIndex)
                 : null;
             var usePurchaseSuccessRender = justPurchasedSubstepIndex != null && !didCompleteStep;
 
-            return new ChallengePageViewModel(
+            return new CharacterPageViewModel(
+                projectileId,
+                isVisible,
                 model.DisplayName,
-                model.Score,
+                !isOwned,
                 steps,
                 activeStepIndex,
                 activeStepPanel,
                 usePurchaseSuccessRender,
-                milestones,
-                equipCharacterPanel);
+                new EquipCharacterPanelViewModel(isOwned, isEquipped));
+        }
+
+        public static CharacterPageViewModel MapDefaultPage(
+            string projectileId,
+            bool isVisible,
+            bool isOwned,
+            bool isEquipped)
+        {
+            return new CharacterPageViewModel(
+                projectileId,
+                isVisible,
+                "Default",
+                !isOwned,
+                Array.Empty<ChallengeStepViewModel>(),
+                -1,
+                null,
+                false,
+                new EquipCharacterPanelViewModel(isOwned, isEquipped));
         }
 
         private static List<ChallengeStepViewModel> BuildStepViewModels(
@@ -88,23 +109,6 @@ namespace AnimalChallenge.Controllers
                               && wallet.GetBalance("AT") >= nextPrice.Value;
 
             return new SubstepPanelViewModel(doneStates, nextPrice, canPurchase);
-        }
-
-        private static List<MilestoneViewData> BuildMilestones(AnimalChallengeModel model)
-        {
-            var milestones = new List<MilestoneViewData>(model.Milestones.Count);
-
-            for (var i = 0; i < model.Milestones.Count; i++)
-            {
-                var milestone = model.Milestones[i];
-                var isClaimed = model.IsMilestoneClaimed(i);
-                milestones.Add(new MilestoneViewData(
-                    milestone.ScoreThreshold,
-                    isClaimed,
-                    !isClaimed && model.Score >= milestone.ScoreThreshold));
-            }
-
-            return milestones;
         }
 
         private static int GetActiveStepIndex(AnimalChallengeModel model, int stepCount)

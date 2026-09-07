@@ -46,6 +46,8 @@ namespace AnimalChallenge.Catapult
 
             if (_projectile != null)
                 _projectileCollider = _projectile.GetComponent<Collider>();
+
+            CacheRestPose();
         }
 
         private void Start()
@@ -84,8 +86,16 @@ namespace AnimalChallenge.Catapult
 
         public Projectile ReplaceProjectile(Projectile prefab)
         {
-            if (prefab == null || !_canPull || _projectileParent == null)
+            if (prefab == null)
                 return _projectile;
+
+            if (_projectileParent == null)
+                CacheRestPose();
+
+            if (_projectileParent == null)
+                return _projectile;
+
+            PrepareForProjectileSwap();
 
             if (_projectile != null)
                 Destroy(_projectile.gameObject);
@@ -93,6 +103,7 @@ namespace AnimalChallenge.Catapult
             var instance = Instantiate(prefab, _projectileParent);
             instance.transform.localPosition = _projectileLocalPosition;
             instance.transform.localRotation = _projectileLocalRotation;
+            DisablePreviewCameras(instance.gameObject);
 
             _projectile = instance;
             _projectileRigidbody = instance.GetComponent<Rigidbody>();
@@ -100,6 +111,32 @@ namespace AnimalChallenge.Catapult
 
             AttachProjectileToArm(restoreTransform: false);
             return _projectile;
+        }
+
+        private void PrepareForProjectileSwap()
+        {
+            CancelInvoke(nameof(ResetCatapult));
+
+            if (_armSwingCoroutine != null)
+            {
+                StopCoroutine(_armSwingCoroutine);
+                _armSwingCoroutine = null;
+            }
+
+            _isPulling = false;
+            _canPull = true;
+            _pendingLaunchT = -1f;
+            _currentBendX = 0f;
+            _armSwingVelocity = 0f;
+
+            if (_armParent != null)
+                ApplyArmBend(0f);
+        }
+
+        private static void DisablePreviewCameras(GameObject projectileObject)
+        {
+            foreach (var camera in projectileObject.GetComponentsInChildren<Camera>(true))
+                camera.gameObject.SetActive(false);
         }
 
         private void CacheRestPose()

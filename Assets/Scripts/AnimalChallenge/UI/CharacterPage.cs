@@ -4,27 +4,31 @@ using UnityEngine.UI;
 
 namespace AnimalChallenge.UI
 {
-    public class ChallengePage : MonoBehaviour, IChallengePageView
+    public class CharacterPage : MonoBehaviour
     {
+        [SerializeField] private string _projectileId;
+        [SerializeField] private GameObject _artRoot;
         [SerializeField] private Image _background;
         [SerializeField] private Text _titleText;
         [SerializeField] private ChallengeStep[] _challengeSteps;
         [SerializeField] private StepPanel _stepPanel;
         [SerializeField] private EquipCharacterPanel _equipCharacterPanel;
 
+        public string ProjectileId => _projectileId;
+
         public event Action PurchaseNextClicked;
-        public event Action EquipCharacterClicked;
+        public event Action<string> EquipCharacterClicked;
 
         private void Awake()
         {
-            if ((_challengeSteps == null || _challengeSteps.Length == 0))
+            if (_challengeSteps == null || _challengeSteps.Length == 0)
                 _challengeSteps = GetComponentsInChildren<ChallengeStep>(true);
-
-            if (_stepPanel != null)
-                _stepPanel.PurchaseClicked += OnStepPanelPurchaseClicked;
 
             if (_equipCharacterPanel == null)
                 _equipCharacterPanel = GetComponentInChildren<EquipCharacterPanel>(true);
+
+            if (_stepPanel != null)
+                _stepPanel.PurchaseClicked += OnStepPanelPurchaseClicked;
 
             if (_equipCharacterPanel != null)
                 _equipCharacterPanel.EquipClicked += OnEquipCharacterPanelClicked;
@@ -39,20 +43,41 @@ namespace AnimalChallenge.UI
                 _equipCharacterPanel.EquipClicked -= OnEquipCharacterPanelClicked;
         }
 
-        public void Render(ChallengePageViewModel viewModel)
+        public void Render(CharacterPageViewModel viewModel)
         {
             if (viewModel == null)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            gameObject.SetActive(viewModel.IsVisible);
+
+            if (!viewModel.IsVisible)
                 return;
 
             if (_titleText != null)
                 _titleText.text = viewModel.Title;
 
-            RenderSteps(viewModel);
-            RenderStepPanel(viewModel);
-            RenderEquipCharacterPanel(viewModel);
+            if (_artRoot != null)
+                _artRoot.SetActive(viewModel.ShowChallengeArt);
+
+            if (viewModel.ShowChallengeArt)
+                RenderChallengeContent(viewModel);
+            else if (_stepPanel != null)
+                _stepPanel.gameObject.SetActive(false);
+
+            if (_equipCharacterPanel != null)
+                _equipCharacterPanel.Render(viewModel.EquipCharacterPanel);
         }
 
-        private void RenderSteps(ChallengePageViewModel viewModel)
+        private void RenderChallengeContent(CharacterPageViewModel viewModel)
+        {
+            RenderSteps(viewModel);
+            RenderStepPanel(viewModel);
+        }
+
+        private void RenderSteps(CharacterPageViewModel viewModel)
         {
             if (_challengeSteps == null)
                 return;
@@ -68,7 +93,7 @@ namespace AnimalChallenge.UI
             }
         }
 
-        private void RenderStepPanel(ChallengePageViewModel viewModel)
+        private void RenderStepPanel(CharacterPageViewModel viewModel)
         {
             if (_stepPanel == null)
                 return;
@@ -109,17 +134,9 @@ namespace AnimalChallenge.UI
             PurchaseNextClicked?.Invoke();
         }
 
-        private void RenderEquipCharacterPanel(ChallengePageViewModel viewModel)
-        {
-            if (_equipCharacterPanel == null)
-                return;
-
-            _equipCharacterPanel.Render(viewModel.EquipCharacterPanel);
-        }
-
         private void OnEquipCharacterPanelClicked()
         {
-            EquipCharacterClicked?.Invoke();
+            EquipCharacterClicked?.Invoke(_projectileId);
         }
     }
 }

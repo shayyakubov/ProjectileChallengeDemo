@@ -1,36 +1,90 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace AnimalChallenge.UI
 {
     public sealed class ChallengePageViewModel
     {
+        public string SelectedProjectileId { get; }
+        public CharacterSelectionViewModel CharacterSelection { get; }
+        public IReadOnlyList<CharacterPageViewModel> Pages { get; }
+
+        public ChallengePageViewModel(
+            string selectedProjectileId,
+            CharacterSelectionViewModel characterSelection,
+            IReadOnlyList<CharacterPageViewModel> pages)
+        {
+            SelectedProjectileId = selectedProjectileId;
+            CharacterSelection = characterSelection;
+            Pages = pages ?? System.Array.Empty<CharacterPageViewModel>();
+        }
+    }
+
+    public sealed class CharacterPageViewModel
+    {
+        public string ProjectileId { get; }
+        public bool IsVisible { get; }
         public string Title { get; }
-        public int Score { get; }
+        public bool ShowChallengeArt { get; }
         public IReadOnlyList<ChallengeStepViewModel> Steps { get; }
         public int ActiveStepIndex { get; }
         public SubstepPanelViewModel ActiveStepPanel { get; }
         public bool UsePurchaseSuccessRender { get; }
-        public IReadOnlyList<MilestoneViewData> Milestones { get; }
         public EquipCharacterPanelViewModel EquipCharacterPanel { get; }
 
-        public ChallengePageViewModel(
+        public CharacterPageViewModel(
+            string projectileId,
+            bool isVisible,
             string title,
-            int score,
+            bool showChallengeArt,
             IReadOnlyList<ChallengeStepViewModel> steps,
             int activeStepIndex,
             SubstepPanelViewModel activeStepPanel,
             bool usePurchaseSuccessRender,
-            IReadOnlyList<MilestoneViewData> milestones,
             EquipCharacterPanelViewModel equipCharacterPanel)
         {
+            ProjectileId = projectileId;
+            IsVisible = isVisible;
             Title = title;
-            Score = score;
+            ShowChallengeArt = showChallengeArt;
             Steps = steps ?? System.Array.Empty<ChallengeStepViewModel>();
             ActiveStepIndex = activeStepIndex;
             ActiveStepPanel = activeStepPanel;
             UsePurchaseSuccessRender = usePurchaseSuccessRender;
-            Milestones = milestones ?? System.Array.Empty<MilestoneViewData>();
             EquipCharacterPanel = equipCharacterPanel;
+        }
+    }
+
+    public sealed class CharacterSelectionViewModel
+    {
+        public IReadOnlyList<CharacterSelectionIconViewModel> Icons { get; }
+
+        public CharacterSelectionViewModel(IReadOnlyList<CharacterSelectionIconViewModel> icons)
+        {
+            Icons = icons ?? System.Array.Empty<CharacterSelectionIconViewModel>();
+        }
+    }
+
+    public sealed class CharacterSelectionIconViewModel
+    {
+        public string ProjectileId { get; }
+        public Sprite Icon { get; }
+        public bool IsOwned { get; }
+        public bool IsEquipped { get; }
+        public bool IsSelected { get; }
+
+        public CharacterSelectionIconViewModel(
+            string projectileId,
+            Sprite icon,
+            bool isOwned,
+            bool isEquipped,
+            bool isSelected)
+        {
+            ProjectileId = projectileId;
+            Icon = icon;
+            IsOwned = isOwned;
+            IsEquipped = isEquipped;
+            IsSelected = isSelected;
         }
     }
 

@@ -11,8 +11,11 @@ namespace AnimalChallenge.Core
         public event Action InventoryChanged;
         public event Action<string> EquippedProjectileChanged;
 
+        [SerializeField] private string _defaultProjectileId = "Default";
+
         private readonly HashSet<string> _ownedProjectileIds = new();
         private string _equippedProjectileId;
+        private bool _isInitialized;
 
         private void Awake()
         {
@@ -23,6 +26,27 @@ namespace AnimalChallenge.Core
             }
 
             Instance = this;
+            EnsureInitialized();
+        }
+
+        public void EnsureInitialized()
+        {
+            if (_isInitialized)
+                return;
+
+            _isInitialized = true;
+            GrantDefaultProjectile();
+        }
+
+        private void GrantDefaultProjectile()
+        {
+            if (string.IsNullOrEmpty(_defaultProjectileId))
+                return;
+
+            _ownedProjectileIds.Add(_defaultProjectileId);
+
+            if (string.IsNullOrEmpty(_equippedProjectileId))
+                _equippedProjectileId = _defaultProjectileId;
         }
 
         private void OnDestroy()
@@ -35,16 +59,19 @@ namespace AnimalChallenge.Core
 
         public bool Owns(string projectileId)
         {
+            EnsureInitialized();
             return !string.IsNullOrEmpty(projectileId) && _ownedProjectileIds.Contains(projectileId);
         }
 
         public bool IsEquipped(string projectileId)
         {
+            EnsureInitialized();
             return !string.IsNullOrEmpty(projectileId) && _equippedProjectileId == projectileId;
         }
 
         public bool Add(string projectileId)
         {
+            EnsureInitialized();
             if (string.IsNullOrEmpty(projectileId) || !_ownedProjectileIds.Add(projectileId))
                 return false;
 
@@ -60,6 +87,14 @@ namespace AnimalChallenge.Core
             _equippedProjectileId = projectileId;
             EquippedProjectileChanged?.Invoke(projectileId);
             return true;
+        }
+
+        public IReadOnlyList<string> GetOwnedProjectileIds()
+        {
+            EnsureInitialized();
+            var ids = new List<string>(_ownedProjectileIds);
+            ids.Sort(StringComparer.Ordinal);
+            return ids;
         }
     }
 }
